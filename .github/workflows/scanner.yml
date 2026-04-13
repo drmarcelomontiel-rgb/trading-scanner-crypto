@@ -16,6 +16,7 @@ on:
         options:
           - ""
           - "H1"
+          - "4H"
           - "D1"
 
 jobs:

@@ -43,11 +43,13 @@ log = logging.getLogger(__name__)
 # ── Constantes ────────────────────────────────────────────────────────────────
 _TF_MAP = {
     "H1": TimeFrame(1, TimeFrameUnit.Hour),
+    "4H": TimeFrame(4, TimeFrameUnit.Hour),
     "D1": TimeFrame(1, TimeFrameUnit.Day),
 }
 
 _TF_LABEL = {
     "H1": "1H",
+    "4H": "4H",
     "D1": "D",
 }
 
@@ -194,8 +196,8 @@ def parse_args() -> argparse.Namespace:
     )
     p.add_argument("--symbol",    type=str, help="Símbolo a escanear (ej: BTC o BTC/USD)")
     p.add_argument("--timeframe", type=str, default=None,
-                   choices=["H1", "D1"],
-                   help="Timeframe: H1 (1 hora) o D1 (diario). Default: ambos")
+                   choices=["H1", "4H", "D1"],
+                   help="Timeframe: H1, 4H o D1. Default: ambos (H1 + 4H)")
     return p.parse_args()
 
 
@@ -215,8 +217,8 @@ def main() -> None:
     for tf in timeframes:
         rows = [scan_one(client, sym, tf) for sym in symbols]
 
-        # Resumen diario: solo cuando se escanea D1 con todos los activos
-        if tf == "D1" and not args.symbol:
+        # Resumen de 4H: solo cuando se escanea 4H con todos los activos
+        if tf == "4H" and not args.symbol:
             tf_label = _TF_LABEL.get(tf, tf)
             summary_msg = format_daily_summary(rows, tf_label)
             log.info(f"\n{summary_msg}\n")

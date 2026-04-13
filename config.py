@@ -7,7 +7,7 @@ import os
 SYMBOLS = ["BTC/USD", "ETH/USD"]
 
 # ── Timeframes ────────────────────────────────────────────────────────────────
-TIMEFRAMES = ["H1", "D1"]
+TIMEFRAMES = ["H1", "4H"]
 
 # ── Setup: parámetros ─────────────────────────────────────────────────────────
 MIN_CONFLUENCES    = 4
