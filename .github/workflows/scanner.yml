@@ -1,0 +1,54 @@
+name: 🔍 Crypto Scanner — Manual
+
+on:
+  # Solo manual. Los schedules automáticos están en scanner-h1.yml y scanner-d1.yml.
+  workflow_dispatch:
+    inputs:
+      symbol:
+        description: "Símbolo (ej: BTC, ETH, SOL — sin /USD)"
+        required: false
+        default: ""
+      timeframe:
+        description: "Timeframe"
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "H1"
+          - "D1"
+
+jobs:
+  scan:
+    name: Ejecutar scanner
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout código
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: 📦 Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: 🔍 Ejecutar scanner
+        env:
+          ALPACA_API_KEY:     ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_API_SECRET:  ${{ secrets.ALPACA_API_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.symbol }}" ]; then
+            ARGS="$ARGS --symbol ${{ github.event.inputs.symbol }}"
+          fi
+          if [ -n "${{ github.event.inputs.timeframe }}" ]; then
+            ARGS="$ARGS --timeframe ${{ github.event.inputs.timeframe }}"
+          fi
+          python scanner.py $ARGS
