@@ -22,7 +22,9 @@ _COND_LABELS = {
     "emas_alineadas":      "EMAs 4/9/18 alineadas",
     "soporte_resistencia": "S/R coincidente con zona de retroceso",
     "vela_reversion":      "Patrón de vela de reversión",
+    "cerca_sr_clave":      "Precio cerca de soporte/resistencia clave",
 }
+_TOTAL_CONDITIONS = len(_COND_LABELS)
 
 
 def _check_mark(value: bool) -> str:
@@ -53,7 +55,7 @@ def format_alert(symbol: str, timeframe: str, result: Dict[str, Any]) -> str:
     msg = (
         f"{arrow} <b>SETUP {dir_label} — {symbol} ({timeframe})</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🎯 <b>Confluencias:</b> {confluences}/6\n\n"
+        f"🎯 <b>Confluencias:</b> {confluences}/{_TOTAL_CONDITIONS}\n\n"
         f"<b>Condiciones detectadas:</b>\n"
         + "\n".join(cond_lines) + "\n\n"
         f"<b>Operativa sugerida:</b>\n"
@@ -76,7 +78,7 @@ def format_daily_summary(rows: List[Dict[str, Any]], timeframe: str) -> str:
     ny_tz = pytz.timezone("America/New_York")
     fecha = datetime.now(ny_tz).strftime("%a %d %b %Y")
 
-    def bar(score: int, total: int = 6) -> str:
+    def bar(score: int, total: int = _TOTAL_CONDITIONS) -> str:
         filled = "●" * score
         empty  = "○" * (total - score)
         return filled + empty
@@ -94,8 +96,9 @@ def format_daily_summary(rows: List[Dict[str, Any]], timeframe: str) -> str:
         brs = r["bearish_score"]
         bv  = r["bullish_valid"]
         brv = r["bearish_valid"]
+        t = _TOTAL_CONDITIONS
         lines.append(
-            f"{sym:<6}  {bar(bs)} {bs}/6{flag(bv):<4}  {bar(brs)} {brs}/6{flag(brv)}"
+            f"{sym:<6}  {bar(bs)} {bs}/{t}{flag(bv):<4}  {bar(brs)} {brs}/{t}{flag(brv)}"
         )
 
     # Destacar setups detectados

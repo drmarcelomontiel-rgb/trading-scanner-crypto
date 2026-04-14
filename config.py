@@ -10,7 +10,8 @@ SYMBOLS = ["BTC/USD", "ETH/USD"]
 TIMEFRAMES = ["H1", "4H"]
 
 # ── Setup: parámetros ─────────────────────────────────────────────────────────
-MIN_CONFLUENCES    = 4
+MIN_CONFLUENCES         = 4     # mínimo de condiciones para disparar alerta (sobre 7)
+SR_PROXIMITY_THRESHOLD  = 0.03  # 3% de distancia máxima al soporte/resistencia clave
 FIB_LOW_LEVEL      = 0.382
 FIB_HIGH_LEVEL     = 0.618
 EMA_PERIODS        = [4, 9, 18]

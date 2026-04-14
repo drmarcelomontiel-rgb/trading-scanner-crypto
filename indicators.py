@@ -8,6 +8,7 @@ Condiciones del setup (bullish / bearish):
   4. EMAs 4, 9 y 18 alineadas en dirección del impulso
   5. Soporte/resistencia coincidente con la zona de retroceso
   6. Patrón de vela de reversión (engulfing, hammer, shooting star)
+  7. Precio cerca de soporte (bullish) o resistencia (bearish) clave
 """
 import numpy as np
 import pandas as pd
@@ -15,7 +16,7 @@ from typing import Optional, Tuple, Dict, Any
 
 from config import (
     EMA_PERIODS, SWING_LOOKBACK, FIB_LOW_LEVEL, FIB_HIGH_LEVEL,
-    MIN_PULLBACK_BARS, MIN_CONFLUENCES,
+    MIN_PULLBACK_BARS, MIN_CONFLUENCES, SR_PROXIMITY_THRESHOLD,
 )
 
 
@@ -239,6 +240,46 @@ def check_sr_in_zone(df: pd.DataFrame, fib_zone: Dict[str, float]) -> bool:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Distancia al soporte / resistencia clave
+# ─────────────────────────────────────────────────────────────────────────────
+
+def check_near_key_level(df: pd.DataFrame, direction: str) -> bool:
+    """
+    Verifica si el precio actual está cerca de un nivel clave.
+
+    Bullish : precio dentro de SR_PROXIMITY_THRESHOLD% por encima del swing low
+              más cercano → el mercado está apoyándose en soporte.
+    Bearish : precio dentro de SR_PROXIMITY_THRESHOLD% por debajo del swing high
+              más cercano → el mercado está chocando contra resistencia.
+    """
+    current = df["close"].iloc[-1]
+    # Usar el histórico sin la última vela para no contaminar con el nivel actual
+    history = df.iloc[:-1]
+    if len(history) < SWING_LOOKBACK * 2 + 1:
+        return False
+
+    swings = find_swing_points(history)
+    thr    = SR_PROXIMITY_THRESHOLD
+
+    if direction == "bullish":
+        lows = swings["swing_low"].dropna()
+        # Solo niveles por debajo o ligeramente sobre el precio actual
+        candidates = lows[lows <= current * (1 + thr)]
+        if candidates.empty:
+            return False
+        nearest = candidates.max()          # el más alto = el más cercano
+        return (current - nearest) / current <= thr
+
+    else:  # bearish
+        highs = swings["swing_high"].dropna()
+        candidates = highs[highs >= current * (1 - thr)]
+        if candidates.empty:
+            return False
+        nearest = candidates.min()          # el más bajo = el más cercano
+        return (nearest - current) / current <= thr
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Patrones de vela de reversión
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -370,9 +411,12 @@ def analyze_setup(df: pd.DataFrame, direction: str) -> Dict[str, Any]:
     cond["vela_reversion"] = rev_detected
     cond["patron_vela"]    = rev_pattern
 
+    # 7. Precio cerca de soporte / resistencia clave
+    cond["cerca_sr_clave"] = check_near_key_level(df, direction)
+
     # ── Confluencias ──────────────────────────────────────────────────────────
     score_keys  = ["impulso", "retroceso", "fibonacci", "emas_alineadas",
-                   "soporte_resistencia", "vela_reversion"]
+                   "soporte_resistencia", "vela_reversion", "cerca_sr_clave"]
     confluences = sum(1 for k in score_keys if cond.get(k))
 
     # ── Zonas de entrada y stop loss ─────────────────────────────────────────
