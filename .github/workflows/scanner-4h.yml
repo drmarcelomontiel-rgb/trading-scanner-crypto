@@ -1,14 +1,15 @@
-name: 📊 Crypto Scanner 4H — Resumen 14:00 ART (17:00 UTC)
+name: 📅 Crypto Scanner D1 — Cierre vela diaria
 
 on:
-  # La vela de 4H cierra a las 16:00 UTC. Corremos a las 17:00 UTC
-  # para tener la vela completa → 14:00 ART (UTC-3).
+  # La vela D1 de crypto cierra a las 00:00 UTC.
+  # Corremos a las 00:30 UTC para tener la vela completa → 21:30 ART (UTC-3).
   schedule:
-    - cron: "0 17 * * *"
+    - cron: "30 0 * * *"
+  workflow_dispatch:
 
 jobs:
-  scan-4h:
-    name: Scan 4H — BTC/USD y ETH/USD
+  scan-d1:
+    name: Scan D1 — BTC/USD y ETH/USD
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -25,10 +26,10 @@ jobs:
       - name: 📦 Instalar dependencias
         run: pip install -r requirements.txt
 
-      - name: 📊 Ejecutar scanner 4H + resumen
+      - name: 📅 Ejecutar scanner D1 + resumen
         env:
           ALPACA_API_KEY:     ${{ secrets.ALPACA_API_KEY }}
           ALPACA_API_SECRET:  ${{ secrets.ALPACA_API_SECRET }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python scanner.py --timeframe 4H
+        run: python scanner.py --timeframe D1
