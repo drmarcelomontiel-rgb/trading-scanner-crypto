@@ -7,7 +7,7 @@ import os
 SYMBOLS = ["BTC/USD", "ETH/USD"]
 
 # ── Timeframes ────────────────────────────────────────────────────────────────
-TIMEFRAMES = ["H1", "4H"]
+TIMEFRAMES = ["H1", "D1"]
 
 # ── Setup: parámetros ─────────────────────────────────────────────────────────
 MIN_CONFLUENCES         = 4     # mínimo de condiciones para disparar alerta (sobre 7)

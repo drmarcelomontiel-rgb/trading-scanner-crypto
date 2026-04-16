@@ -4,9 +4,10 @@ Trading Scanner — Crypto
 Detecta setups de impulso + retroceso Fibonacci en H1 y D1.
 Opera 24/7 (sin chequeo de horario de mercado).
 Envía alertas por Telegram cuando se dan ≥4 confluencias.
+El precio mostrado en la alerta es el precio live del último trade.
 
 Uso manual:
-  python scanner.py                          # escanea BTC/USD y ETH/USD
+  python scanner.py                          # escanea BTC/USD y ETH/USD en H1 + D1
   python scanner.py --symbol BTC             # acepta BTC o BTC/USD
   python scanner.py --symbol ETH --timeframe H1
   python scanner.py --symbol SOL --timeframe D1  # cualquier crypto de Alpaca
@@ -21,7 +22,7 @@ import pytz
 import pandas as pd
 
 from alpaca.data.historical.crypto import CryptoHistoricalDataClient
-from alpaca.data.requests import CryptoBarsRequest
+from alpaca.data.requests import CryptoBarsRequest, CryptoLatestTradeRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 
 from config import (
@@ -72,6 +73,20 @@ def get_alpaca_client() -> CryptoHistoricalDataClient:
     if ALPACA_API_KEY and ALPACA_API_SECRET:
         return CryptoHistoricalDataClient(ALPACA_API_KEY, ALPACA_API_SECRET)
     return CryptoHistoricalDataClient()
+
+
+def fetch_live_price(client: CryptoHistoricalDataClient, symbol: str) -> Optional[float]:
+    """Obtiene el precio actual del último trade en tiempo real."""
+    try:
+        req  = CryptoLatestTradeRequest(symbol_or_symbols=symbol)
+        data = client.get_crypto_latest_trade(req)
+        trade = data.get(symbol)
+        if trade is None and data:
+            trade = list(data.values())[0]
+        return float(trade.price) if trade else None
+    except Exception as e:
+        log.warning(f"No se pudo obtener precio live para {symbol}: {e}")
+        return None
 
 
 def fetch_bars(
@@ -173,6 +188,9 @@ def scan_one(
             summary["bearish_valid"] = valid
 
         if valid:
+            live = fetch_live_price(client, symbol)
+            if live is not None:
+                result["current_price"] = live
             message = format_alert(symbol, tf_label, result)
             log.info(f"\n{message}\n")
             send_telegram_alert(message)
@@ -197,7 +215,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--symbol",    type=str, help="Símbolo a escanear (ej: BTC o BTC/USD)")
     p.add_argument("--timeframe", type=str, default=None,
                    choices=["H1", "4H", "D1"],
-                   help="Timeframe: H1, 4H o D1. Default: ambos (H1 + 4H)")
+                   help="Timeframe: H1, 4H o D1. Default: ambos (H1 + D1)")
     return p.parse_args()
 
 
@@ -217,8 +235,8 @@ def main() -> None:
     for tf in timeframes:
         rows = [scan_one(client, sym, tf) for sym in symbols]
 
-        # Resumen de 4H: solo cuando se escanea 4H con todos los activos
-        if tf == "4H" and not args.symbol:
+        # Resumen de D1: solo cuando se escanea D1 con todos los activos
+        if tf == "D1" and not args.symbol:
             tf_label = _TF_LABEL.get(tf, tf)
             summary_msg = format_daily_summary(rows, tf_label)
             log.info(f"\n{summary_msg}\n")
